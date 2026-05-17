@@ -46,12 +46,12 @@ export default function Scheduler() {
 
   // FCFS with Gantt Chart
   const fcfs = (procs: Process[]): AlgorithmResult => {
-    let sorted = [...procs].sort((a, b) => a.arrival - b.arrival);
+    const sorted = [...procs].sort((a, b) => a.arrival - b.arrival);
     let time = 0;
-    let res: Result[] = [];
-    let gantt: GanttItem[] = [];
+    const res: Result[] = [];
+    const gantt: GanttItem[] = [];
     
-    for (let p of sorted) {
+    for (const p of sorted) {
       if (time < p.arrival) {
         // Add idle time
         if (time < p.arrival) {
@@ -59,36 +59,36 @@ export default function Scheduler() {
         }
         time = p.arrival;
       }
-      let waiting = time - p.arrival;
-      let turnaround = waiting + p.burst;
+      const waiting = time - p.arrival;
+      const turnaround = waiting + p.burst;
       res.push({ pid: p.id, waiting, turnaround });
       gantt.push({ pid: p.id, start: time, end: time + p.burst });
       time += p.burst;
     }
     
-    let avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
-    let avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
+    const avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
+    const avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
     
     return { results: res, gantt, avgW, avgT };
   };
 
   // SJF (Non-preemptive) with Gantt Chart
   const sjf = (procs: Process[]): AlgorithmResult => {
-    let remaining = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
+    const remaining = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
     let time = 0;
     let done = 0;
-    let res: Result[] = [];
-    let gantt: GanttItem[] = [];
-    let completed = new Set();
+    const res: Result[] = [];
+    const gantt: GanttItem[] = [];
+    const completed = new Set();
     
     while (done < procs.length) {
-      let available = remaining.filter(
+      const available = remaining.filter(
         (p) => p.arrival <= time && p.remaining > 0 && !completed.has(p.id)
       );
       
       if (available.length === 0) {
         // Idle time - find next arrival
-        let nextArrival = Math.min(...remaining.filter(p => !completed.has(p.id)).map(p => p.arrival));
+        const nextArrival = Math.min(...remaining.filter(p => !completed.has(p.id)).map(p => p.arrival));
         if (nextArrival > time) {
           gantt.push({ pid: "Idle", start: time, end: nextArrival });
           time = nextArrival;
@@ -97,9 +97,9 @@ export default function Scheduler() {
       }
       
       available.sort((a, b) => a.burst - b.burst);
-      let curr = available[0];
-      let waiting = time - curr.arrival;
-      let turnaround = waiting + curr.burst;
+      const curr = available[0];
+      const waiting = time - curr.arrival;
+      const turnaround = waiting + curr.burst;
       res.push({ pid: curr.id, waiting, turnaround });
       gantt.push({ pid: curr.id, start: time, end: time + curr.burst });
       time += curr.burst;
@@ -107,26 +107,26 @@ export default function Scheduler() {
       done++;
     }
     
-    let avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
-    let avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
+    const avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
+    const avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
     
     return { results: res, gantt, avgW, avgT };
   };
 
   // Round Robin with Gantt Chart
   const roundRobin = (procs: Process[], quantumVal: number): AlgorithmResult => {
-    let queue = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
+    const queue = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
     queue.sort((a, b) => a.arrival - b.arrival);
     let time = 0;
-    let res: Result[] = [];
-    let gantt: GanttItem[] = [];
+    const res: Result[] = [];
+    const gantt: GanttItem[] = [];
     let complete = 0;
-    let completedSet = new Set();
+    const completedSet = new Set();
     let idx = 0;
     
     while (complete < procs.length) {
       if (idx >= queue.length) idx = 0;
-      let p = queue[idx];
+      const p = queue[idx];
       
       if (p.remaining <= 0 || completedSet.has(p.id)) {
         idx++;
@@ -134,7 +134,7 @@ export default function Scheduler() {
       }
       
       if (time < p.arrival) {
-        let nextArrival = p.arrival;
+        const nextArrival = p.arrival;
         if (time < nextArrival) {
           gantt.push({ pid: "Idle", start: time, end: nextArrival });
           time = nextArrival;
@@ -142,14 +142,14 @@ export default function Scheduler() {
         continue;
       }
       
-      let exec = Math.min(quantumVal, p.remaining);
+      const exec = Math.min(quantumVal, p.remaining);
       gantt.push({ pid: p.id, start: time, end: time + exec });
       time += exec;
       p.remaining -= exec;
       
       if (p.remaining === 0) {
-        let turnaround = time - p.arrival;
-        let waiting = turnaround - p.burst;
+        const turnaround = time - p.arrival;
+        const waiting = turnaround - p.burst;
         res.push({ pid: p.id, waiting, turnaround });
         completedSet.add(p.id);
         complete++;
@@ -157,28 +157,28 @@ export default function Scheduler() {
       idx++;
     }
     
-    let avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
-    let avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
+    const avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
+    const avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
     
     return { results: res, gantt, avgW, avgT };
   };
 
   // Priority Scheduling with Gantt Chart
   const prioritySched = (procs: Process[]): AlgorithmResult => {
-    let remaining = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
+    const remaining = [...procs.map((p) => ({ ...p, remaining: p.burst }))];
     let time = 0;
     let done = 0;
-    let res: Result[] = [];
-    let gantt: GanttItem[] = [];
-    let completed = new Set();
+    const res: Result[] = [];
+    const gantt: GanttItem[] = [];
+    const completed = new Set();
     
     while (done < procs.length) {
-      let available = remaining.filter(
+      const available = remaining.filter(
         (p) => p.arrival <= time && p.remaining > 0 && !completed.has(p.id)
       );
       
       if (available.length === 0) {
-        let nextArrival = Math.min(...remaining.filter(p => !completed.has(p.id)).map(p => p.arrival));
+        const nextArrival = Math.min(...remaining.filter(p => !completed.has(p.id)).map(p => p.arrival));
         if (nextArrival > time) {
           gantt.push({ pid: "Idle", start: time, end: nextArrival });
           time = nextArrival;
@@ -187,9 +187,9 @@ export default function Scheduler() {
       }
       
       available.sort((a, b) => a.priority - b.priority);
-      let curr = available[0];
-      let waiting = time - curr.arrival;
-      let turnaround = waiting + curr.burst;
+      const curr = available[0];
+      const waiting = time - curr.arrival;
+      const turnaround = waiting + curr.burst;
       res.push({ pid: curr.id, waiting, turnaround });
       gantt.push({ pid: curr.id, start: time, end: time + curr.burst });
       time += curr.burst;
@@ -197,8 +197,8 @@ export default function Scheduler() {
       done++;
     }
     
-    let avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
-    let avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
+    const avgW = (res.reduce((a, b) => a + b.waiting, 0) / res.length).toFixed(2);
+    const avgT = (res.reduce((a, b) => a + b.turnaround, 0) / res.length).toFixed(2);
     
     return { results: res, gantt, avgW, avgT };
   };
@@ -300,7 +300,7 @@ export default function Scheduler() {
                     <input
                       value={p.id}
                       onChange={(e) => {
-                        let newP = [...processes];
+                        const newP = [...processes];
                         newP[i].id = e.target.value;
                         setProcesses(newP);
                         setResults(null);
@@ -313,7 +313,7 @@ export default function Scheduler() {
                       type="number"
                       value={p.arrival}
                       onChange={(e) => {
-                        let newP = [...processes];
+                        const newP = [...processes];
                         newP[i].arrival = +e.target.value;
                         setProcesses(newP);
                         setResults(null);
@@ -326,7 +326,7 @@ export default function Scheduler() {
                       type="number"
                       value={p.burst}
                       onChange={(e) => {
-                        let newP = [...processes];
+                        const newP = [...processes];
                         newP[i].burst = +e.target.value;
                         setProcesses(newP);
                         setResults(null);
@@ -339,7 +339,7 @@ export default function Scheduler() {
                       type="number"
                       value={p.priority}
                       onChange={(e) => {
-                        let newP = [...processes];
+                        const newP = [...processes];
                         newP[i].priority = +e.target.value;
                         setProcesses(newP);
                         setResults(null);
@@ -409,7 +409,7 @@ export default function Scheduler() {
             { key: "fcfs", name: "FCFS (First Come First Serve)", color: "blue" },
             { key: "sjf", name: "SJF (Shortest Job First - Non Preemptive)", color: "green" },
             { key: "rr", name: "Round Robin Scheduling", color: "purple" },
-            { key: "priority", name: "Priority Scheduling (Lower = Higher Priority)", color: "orange" }
+            { key: "priority", name: "Priority Scheduling (Lower Number = Higher Priority)", color: "orange" }
           ].map((algo) => {
             const data = results[algo.key as keyof typeof results] as AlgorithmResult;
             
@@ -458,10 +458,10 @@ export default function Scheduler() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state - Fixed unescaped entities */}
       {!results && processes.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded p-6 text-center text-gray-600">
-          <p className="text-lg">⚙️ Click <strong>"RUN ALL ALGORITHMS"</strong> to see scheduling results</p>
+          <p className="text-lg">⚙️ Click <strong>&quot;RUN ALL ALGORITHMS&quot;</strong> to see scheduling results</p>
           <p className="text-sm mt-2">📊 You will see: Process Tables, Waiting/Turnaround Times, Averages, and GANTT CHARTS</p>
         </div>
       )}
