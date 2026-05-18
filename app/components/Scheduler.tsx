@@ -37,6 +37,7 @@ const defaultProcesses: Process[] = [
 export default function Scheduler() {
   const [processes, setProcesses] = useState<Process[]>(defaultProcesses);
   const [quantum, setQuantum] = useState(2);
+  const [selectedAlgo, setSelectedAlgo] = useState<string>("all");
   const [results, setResults] = useState<{
     fcfs: AlgorithmResult;
     sjf: AlgorithmResult;
@@ -53,7 +54,6 @@ export default function Scheduler() {
     
     for (const p of sorted) {
       if (time < p.arrival) {
-        // Add idle time
         if (time < p.arrival) {
           gantt.push({ pid: "Idle", start: time, end: p.arrival });
         }
@@ -87,7 +87,6 @@ export default function Scheduler() {
       );
       
       if (available.length === 0) {
-        // Idle time - find next arrival
         const nextArrival = Math.min(...remaining.filter(p => !completed.has(p.id)).map(p => p.arrival));
         if (nextArrival > time) {
           gantt.push({ pid: "Idle", start: time, end: nextArrival });
@@ -233,6 +232,7 @@ export default function Scheduler() {
     setProcesses(defaultProcesses);
     setQuantum(2);
     setResults(null);
+    setSelectedAlgo("all");
   };
 
   // Clear all results
@@ -273,24 +273,117 @@ export default function Scheduler() {
     );
   };
 
+  // Get visible columns based on selected algorithm
+  const getVisibleColumns = () => {
+    if (selectedAlgo === "fcfs") {
+      return { arrival: true, burst: true, priority: false };
+    } else if (selectedAlgo === "sjf") {
+      return { arrival: true, burst: true, priority: false };
+    } else if (selectedAlgo === "rr") {
+      return { arrival: true, burst: true, priority: false };
+    } else if (selectedAlgo === "priority") {
+      return { arrival: true, burst: true, priority: true };
+    } else {
+      return { arrival: true, burst: true, priority: true };
+    }
+  };
+
+  const visibleColumns = getVisibleColumns();
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-6 text-blue-700">
-        ⚙️ CPU Scheduling Simulator
+         CPU Scheduling Simulator
       </h1>
+
+      {/* Algorithm Selection Section */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-lg shadow mb-6">
+        <h2 className="text-xl font-semibold mb-3 text-white">🎯 Select Scheduling Algorithm</h2>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <button
+            onClick={() => setSelectedAlgo("all")}
+            className={`px-4 py-2 rounded font-semibold transition ${
+              selectedAlgo === "all" 
+                ? "bg-white text-blue-600 shadow-lg" 
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
+          >
+            📊 All Algorithms
+          </button>
+          <button
+            onClick={() => setSelectedAlgo("fcfs")}
+            className={`px-4 py-2 rounded font-semibold transition ${
+              selectedAlgo === "fcfs" 
+                ? "bg-white text-blue-600 shadow-lg" 
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
+          >
+            ⏰ FCFS
+          </button>
+          <button
+            onClick={() => setSelectedAlgo("sjf")}
+            className={`px-4 py-2 rounded font-semibold transition ${
+              selectedAlgo === "sjf" 
+                ? "bg-white text-blue-600 shadow-lg" 
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
+          >
+            ⚡ SJF
+          </button>
+          <button
+            onClick={() => setSelectedAlgo("rr")}
+            className={`px-4 py-2 rounded font-semibold transition ${
+              selectedAlgo === "rr" 
+                ? "bg-white text-blue-600 shadow-lg" 
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
+          >
+            🔄 Round Robin
+          </button>
+          <button
+            onClick={() => setSelectedAlgo("priority")}
+            className={`px-4 py-2 rounded font-semibold transition ${
+              selectedAlgo === "priority" 
+                ? "bg-white text-blue-600 shadow-lg" 
+                : "bg-blue-700 text-white hover:bg-blue-800"
+            }`}
+          >
+            🎯 Priority
+          </button>
+        </div>
+      </div>
 
       {/* Input Section */}
       <div className="bg-white p-4 rounded shadow mb-6">
         <h2 className="text-xl font-semibold mb-2">📝 Process Details</h2>
         
+        {/* Show warning based on selection */}
+        {selectedAlgo === "priority" && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-3 mb-3 text-sm">
+            💡 <strong>Note:</strong> Lower priority number = Higher priority
+          </div>
+        )}
+        
+        {selectedAlgo === "rr" && (
+          <div className="bg-blue-100 border-l-4 border-blue-500 p-3 mb-3 text-sm">
+            💡 <strong>Note:</strong> Don&apos;t forget to set Time Quantum below
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
           <table className="w-full border mb-4">
             <thead className="bg-gray-200">
               <tr>
-                <th className="border p-2">ID</th>
-                <th className="border p-2">Arrival Time</th>
-                <th className="border p-2">Burst Time</th>
-                <th className="border p-2">Priority</th>
+                <th className="border p-2">Process ID</th>
+                {visibleColumns.arrival && (
+                  <th className="border p-2">Arrival Time</th>
+                )}
+                {visibleColumns.burst && (
+                  <th className="border p-2">Burst Time</th>
+                )}
+                {visibleColumns.priority && (
+                  <th className="border p-2">Priority</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -308,45 +401,51 @@ export default function Scheduler() {
                       className="w-full p-1 border rounded"
                     />
                   </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      value={p.arrival}
-                      onChange={(e) => {
-                        const newP = [...processes];
-                        newP[i].arrival = +e.target.value;
-                        setProcesses(newP);
-                        setResults(null);
-                      }}
-                      className="w-full p-1 border rounded"
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      value={p.burst}
-                      onChange={(e) => {
-                        const newP = [...processes];
-                        newP[i].burst = +e.target.value;
-                        setProcesses(newP);
-                        setResults(null);
-                      }}
-                      className="w-full p-1 border rounded"
-                    />
-                  </td>
-                  <td className="border p-2">
-                    <input
-                      type="number"
-                      value={p.priority}
-                      onChange={(e) => {
-                        const newP = [...processes];
-                        newP[i].priority = +e.target.value;
-                        setProcesses(newP);
-                        setResults(null);
-                      }}
-                      className="w-full p-1 border rounded"
-                    />
-                  </td>
+                  {visibleColumns.arrival && (
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={p.arrival}
+                        onChange={(e) => {
+                          const newP = [...processes];
+                          newP[i].arrival = +e.target.value;
+                          setProcesses(newP);
+                          setResults(null);
+                        }}
+                        className="w-full p-1 border rounded"
+                      />
+                    </td>
+                  )}
+                  {visibleColumns.burst && (
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={p.burst}
+                        onChange={(e) => {
+                          const newP = [...processes];
+                          newP[i].burst = +e.target.value;
+                          setProcesses(newP);
+                          setResults(null);
+                        }}
+                        className="w-full p-1 border rounded"
+                      />
+                    </td>
+                  )}
+                  {visibleColumns.priority && (
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={p.priority}
+                        onChange={(e) => {
+                          const newP = [...processes];
+                          newP[i].priority = +e.target.value;
+                          setProcesses(newP);
+                          setResults(null);
+                        }}
+                        className="w-full p-1 border rounded"
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -381,90 +480,149 @@ export default function Scheduler() {
           </button>
         </div>
 
-        {/* Time Quantum */}
-        <div className="mt-4">
-          <label className="font-semibold mr-2">⏱️ Time Quantum (RR): </label>
-          <input
-            type="number"
-            value={quantum}
-            onChange={(e) => setQuantum(+e.target.value)}
-            className="border p-1 w-24 rounded"
-            min="1"
-          />
-        </div>
+        {/* Time Quantum - Only show for Round Robin */}
+        {(selectedAlgo === "rr" || selectedAlgo === "all") && (
+          <div className="mt-4">
+            <label className="font-semibold mr-2">⏱️ Time Quantum (for RR): </label>
+            <input
+              type="number"
+              value={quantum}
+              onChange={(e) => setQuantum(+e.target.value)}
+              className="border p-1 w-24 rounded"
+              min="1"
+            />
+          </div>
+        )}
 
         {/* Run Button */}
         <button
           onClick={calculate}
           className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full transition font-semibold text-lg"
         >
-          🚀 RUN ALL ALGORITHMS
+           RUN {selectedAlgo === "all" ? "ALL ALGORITHMS" : selectedAlgo.toUpperCase()}
         </button>
       </div>
 
-      {/* Results Section */}
+      {/* Results Section - Show only selected algorithm or all */}
       {results && (
         <div className="space-y-8">
-          {[
-            { key: "fcfs", name: "FCFS (First Come First Serve)", color: "blue" },
-            { key: "sjf", name: "SJF (Shortest Job First - Non Preemptive)", color: "green" },
-            { key: "rr", name: "Round Robin Scheduling", color: "purple" },
-            { key: "priority", name: "Priority Scheduling (Lower Number = Higher Priority)", color: "orange" }
-          ].map((algo) => {
-            const data = results[algo.key as keyof typeof results] as AlgorithmResult;
-            
-            return (
-              <div key={algo.key} className={`bg-white p-4 rounded shadow border-l-8 border-${algo.color}-500`}>
-                <h2 className={`text-2xl font-bold text-${algo.color}-700 mb-3`}>
-                  📊 {algo.name}
-                </h2>
-                
-                {/* Process Table */}
-                <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
-                <table className="w-full border mt-2">
-                  <thead className={`bg-${algo.color}-100`}>
-                    <tr>
-                      <th className="border p-2">Process</th>
-                      <th className="border p-2">Waiting Time</th>
-                      <th className="border p-2">Turnaround Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.results.map((p, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="border p-2 text-center font-semibold">{p.pid}</td>
-                        <td className="border p-2 text-center">{p.waiting}</td>
-                        <td className="border p-2 text-center">{p.turnaround}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {/* Averages */}
-                <div className="mt-3 p-2 bg-gray-50 rounded">
-                  <p className="font-semibold">
-                    📈 Average Waiting Time: <span className="text-blue-600">{data.avgW}</span>
-                  </p>
-                  <p className="font-semibold">
-                    📈 Average Turnaround Time: <span className="text-green-600">{data.avgT}</span>
-                  </p>
+          {selectedAlgo === "all" && (
+            <>
+              {[
+                { key: "fcfs", name: "FCFS (First Come First Serve)", color: "blue" },
+                { key: "sjf", name: "SJF (Shortest Job First - Non Preemptive)", color: "green" },
+                { key: "rr", name: "Round Robin Scheduling", color: "purple" },
+                { key: "priority", name: "Priority Scheduling (Lower Number = Higher Priority)", color: "orange" }
+              ].map((algo) => {
+                const data = results[algo.key as keyof typeof results] as AlgorithmResult;
+                return (
+                  <div key={algo.key} className={`bg-white p-4 rounded shadow border-l-8 border-${algo.color}-500`}>
+                    <h2 className={`text-2xl font-bold text-${algo.color}-700 mb-3`}>📊 {algo.name}</h2>
+                    <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
+                    <table className="w-full border mt-2">
+                      <thead className={`bg-${algo.color}-100`}>
+                        <tr><th className="border p-2">Process</th><th className="border p-2">Waiting Time</th><th className="border p-2">Turnaround Time</th></tr>
+                      </thead>
+                      <tbody>
+                        {data.results.map((p, i) => (
+                          <tr key={i} className="hover:bg-gray-50">
+                            <td className="border p-2 text-center font-semibold">{p.pid}</td>
+                            <td className="border p-2 text-center">{p.waiting}</td>
+                            <td className="border p-2 text-center">{p.turnaround}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="mt-3 p-2 bg-gray-50 rounded">
+                      <p className="font-semibold">📈 Average Waiting Time: <span className="text-blue-600">{data.avgW}</span></p>
+                      <p className="font-semibold">📈 Average Turnaround Time: <span className="text-green-600">{data.avgT}</span></p>
+                    </div>
+                    <GanttChart gantt={data.gantt} />
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Show only selected single algorithm */}
+          {selectedAlgo !== "all" && (
+            <div className="space-y-4">
+              {selectedAlgo === "fcfs" && results.fcfs && (
+                <div className="bg-white p-4 rounded shadow border-l-8 border-blue-500">
+                  <h2 className="text-2xl font-bold text-blue-700 mb-3">📊 FCFS (First Come First Serve)</h2>
+                  <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
+                  <table className="w-full border mt-2">
+                    <thead className="bg-blue-100"><tr><th className="border p-2">Process</th><th className="border p-2">Waiting Time</th><th className="border p-2">Turnaround Time</th></tr></thead>
+                    <tbody>
+                      {results.fcfs.results.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50"><td className="border p-2 text-center font-semibold">{p.pid}</td><td className="border p-2 text-center">{p.waiting}</td><td className="border p-2 text-center">{p.turnaround}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 p-2 bg-gray-50 rounded"><p className="font-semibold">📈 Average Waiting Time: <span className="text-blue-600">{results.fcfs.avgW}</span></p><p className="font-semibold">📈 Average Turnaround Time: <span className="text-green-600">{results.fcfs.avgT}</span></p></div>
+                  <GanttChart gantt={results.fcfs.gantt} />
                 </div>
-                
-                {/* Gantt Chart */}
-                <GanttChart gantt={data.gantt} />
-              </div>
-            );
-          })}
+              )}
+              {selectedAlgo === "sjf" && results.sjf && (
+                <div className="bg-white p-4 rounded shadow border-l-8 border-green-500">
+                  <h2 className="text-2xl font-bold text-green-700 mb-3">📊 SJF (Shortest Job First)</h2>
+                  <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
+                  <table className="w-full border mt-2">
+                    <thead className="bg-green-100"><tr><th className="border p-2">Process</th><th className="border p-2">Waiting Time</th><th className="border p-2">Turnaround Time</th></tr></thead>
+                    <tbody>
+                      {results.sjf.results.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50"><td className="border p-2 text-center font-semibold">{p.pid}</td><td className="border p-2 text-center">{p.waiting}</td><td className="border p-2 text-center">{p.turnaround}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 p-2 bg-gray-50 rounded"><p className="font-semibold">📈 Average Waiting Time: <span className="text-blue-600">{results.sjf.avgW}</span></p><p className="font-semibold">📈 Average Turnaround Time: <span className="text-green-600">{results.sjf.avgT}</span></p></div>
+                  <GanttChart gantt={results.sjf.gantt} />
+                </div>
+              )}
+              {selectedAlgo === "rr" && results.rr && (
+                <div className="bg-white p-4 rounded shadow border-l-8 border-purple-500">
+                  <h2 className="text-2xl font-bold text-purple-700 mb-3">📊 Round Robin (Quantum: {quantum})</h2>
+                  <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
+                  <table className="w-full border mt-2">
+                    <thead className="bg-purple-100"><tr><th className="border p-2">Process</th><th className="border p-2">Waiting Time</th><th className="border p-2">Turnaround Time</th></tr></thead>
+                    <tbody>
+                      {results.rr.results.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50"><td className="border p-2 text-center font-semibold">{p.pid}</td><td className="border p-2 text-center">{p.waiting}</td><td className="border p-2 text-center">{p.turnaround}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 p-2 bg-gray-50 rounded"><p className="font-semibold">📈 Average Waiting Time: <span className="text-blue-600">{results.rr.avgW}</span></p><p className="font-semibold">📈 Average Turnaround Time: <span className="text-green-600">{results.rr.avgT}</span></p></div>
+                  <GanttChart gantt={results.rr.gantt} />
+                </div>
+              )}
+              {selectedAlgo === "priority" && results.priority && (
+                <div className="bg-white p-4 rounded shadow border-l-8 border-orange-500">
+                  <h2 className="text-2xl font-bold text-orange-700 mb-3">📊 Priority Scheduling (Lower = Higher Priority)</h2>
+                  <h3 className="font-semibold text-lg mt-2">📋 Process Table</h3>
+                  <table className="w-full border mt-2">
+                    <thead className="bg-orange-100"><tr><th className="border p-2">Process</th><th className="border p-2">Waiting Time</th><th className="border p-2">Turnaround Time</th></tr></thead>
+                    <tbody>
+                      {results.priority.results.map((p, i) => (
+                        <tr key={i} className="hover:bg-gray-50"><td className="border p-2 text-center font-semibold">{p.pid}</td><td className="border p-2 text-center">{p.waiting}</td><td className="border p-2 text-center">{p.turnaround}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <div className="mt-3 p-2 bg-gray-50 rounded"><p className="font-semibold">📈 Average Waiting Time: <span className="text-blue-600">{results.priority.avgW}</span></p><p className="font-semibold">📈 Average Turnaround Time: <span className="text-green-600">{results.priority.avgT}</span></p></div>
+                  <GanttChart gantt={results.priority.gantt} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Empty state - Fixed unescaped entities */}
+      {/* Empty state */}
       {!results && processes.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded p-6 text-center text-gray-600">
-          <p className="text-lg">⚙️ Click <strong>&quot;RUN ALL ALGORITHMS&quot;</strong> to see scheduling results</p>
+          <p className="text-lg">⚙️ Click <strong>&quot;RUN {selectedAlgo === "all" ? "ALL ALGORITHMS" : selectedAlgo.toUpperCase()}&quot;</strong> to see scheduling results</p>
           <p className="text-sm mt-2">📊 You will see: Process Tables, Waiting/Turnaround Times, Averages, and GANTT CHARTS</p>
         </div>
       )}
     </div>
   );
-}
+} 
